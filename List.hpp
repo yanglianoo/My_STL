@@ -1,4 +1,4 @@
-#include "ListNode.h"
+#include "ListNode.hpp"
 
 template <typename T>
 class List
@@ -10,12 +10,12 @@ private:
 
 protected:
     void init(); // 列表初始化
-    int clear(); // 清除所有节点
-    void copyNode( ListNodePosi(T), int ); // 复制自定义位置起的n个节点
-    void merge( ListNodePosi(T)&, int, List<T>&, ListNodePosi(T), int ); //归并
-    void mergeSort( ListNodePosi(T)&, int ); // 对从自定义位置起的n个节点进行 归并排序
-    void selectionSort( ListNodePosi(T)&, int ); // 对从自定义位置起的n个节点进行 选择排序
-    void insertSort( ListNodePosi(T)&, int ); // 对从自定义位置起的n个节点进行 插入排序
+    int clear(); // 清除所有节点 返回值是原列表元素个数
+    void copyNodes( ListNodePosi(T) p, int n ); // 复制自定义位置起的n个节点
+    void merge( ListNodePosi(T)& p, int n, List<T>& L, ListNodePosi(T) q, int m); //归并
+    void mergeSort( ListNodePosi(T)& p, int n ); // 对从自定义位置起的n个节点进行 归并排序
+    void selectionSort( ListNodePosi(T)& p, int n ); // 对从自定义位置起的n个节点进行 选择排序
+    void insertSort( ListNodePosi(T)& p, int n ); // 对从自定义位置起的n个节点进行 插入排序
 
 public:
     // 构造函数
@@ -67,7 +67,7 @@ public:
     { return sort( first(), _size); }
     void sort( ListNodePosi(T) p, int n ); // 列表区间排序
 
-    int deduplicate(); // 无序去重
+    int deduplicate(); // 无序去重 返回值是删除的元素个数
     int uniquify(); // 有序去重
     
     void reverse(); // 前后倒置
