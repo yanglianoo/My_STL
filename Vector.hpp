@@ -49,7 +49,7 @@ public:
 // 只读访问接口
     int size() const { return _size; } //返回 vector 数组大小
     bool empty() const { return !_size; } //判断是否为空
-    int disordered() const; //刞断向量是否已排序
+    bool disordered() const; //刞断向量是否已排序
     int find ( T const& e ) const { return find ( e, 0, _size ); } //无序向量整体查找
     int find ( T const& e, int lo, int hi ) const; //无序向量区间查找
     int search ( T const& e ) const //有序向量整体查找
@@ -73,5 +73,6 @@ public:
 //遍历
     void traverse ( void (* ) ( T& ) ); //遍历（使用函数指针，只读或局部性修改）
     template <typename VST> void traverse ( VST& ); //遍历（使用函数对象，可全局性修改）
+
 
 }; //vector
