@@ -2,6 +2,6 @@
 main.out:*.cpp
 	g++ $^ -o $@
 
-.PHONY: clear
+.PHONY: clean
 clear:
 	rm -rf *.out

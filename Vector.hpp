@@ -8,99 +8,138 @@
  */
 #pragma once 
 
+#include <initializer_list>
+#include <iostream>
+#include <stdexcept>
 
-//  #define DEFAULT_CAPACITY 3 //默认的初始容量（实际应用中可设置为更大）
-
-
-// template <typename T> class Vector 
-// { 
-
-// protected:
-//     int _size;  //大小
-//     int _capacity; //容量
-//     T* _elem;  //数据区指针
-//     void copyFrom ( T const* A, int lo, int hi ); //复制数组区间 A[lo, hi]
-//     void expand(); //空间不足时扩容
-//     void shrink(); //装填因子过小时压缩
-//     bool bubble ( int lo, int hi ); //扫描交换
-//     void bubbleSort ( int lo, int hi ); //起泡排序算法
-//     int max ( int lo, int hi ); //选取最大元素
-//     void selectionSort ( int lo, int hi ); //选择排序算法
-//     void merge ( int lo, int mi, int hi ); //归并算法
-//     void mergeSort ( int lo, int hi ); //归并排序算法
-//     int partition ( int lo, int hi ); //轴点构造算法
-//     void quickSort ( int lo, int hi ); //快速排序算法
-//     void heapSort ( int lo, int hi ); //堆排序
-
-// public:
-
-// // 极造函数
-//     Vector ( int c = DEFAULT_CAPACITY, int s = 0, T v = 0 ) //容量为c、规模为s、所有元素初始为v ，默认构造函数
-//     { 
-//         _elem = new T[_capacity = c]; for ( _size = 0; _size < s; _elem[_size++] = v ); //s<=c
-//     } 
-//     Vector ( T const* A, int n ) { copyFrom ( A, 0, n ); } //数组整体复制
-//     Vector ( T const* A, int lo, int hi ) { copyFrom ( A, lo, hi ); } //区间复制
-//     Vector ( Vector<T> const& V ) { copyFrom ( V._elem, 0, V._size ); } //向量整体复制
-//     Vector ( Vector<T> const& V, int lo, int hi ) { copyFrom ( V._elem, lo, hi ); } //区间
-
-//  // 析构函数
-//     ~Vector() { delete [] _elem; } //释放内部空间
-// // 只读访问接口
-//     int size() const { return _size; } //返回 vector 数组大小
-//     bool empty() const { return !_size; } //判断是否为空
-//     bool disordered() const; //刞断向量是否已排序
-//     int find ( T const& e ) const { return find ( e, 0, _size ); } //无序向量整体查找
-//     int find ( T const& e, int lo, int hi ) const; //无序向量区间查找
-//     int search ( T const& e ) const //有序向量整体查找
-//     { return ( 0 >= _size ) ? -1 : search ( e, 0, _size ); }
-//     int search ( T const& e, int lo, int hi ) const; //有序向量区间查找
-
-// //可写访问接口
-//     T& operator[] ( int r ) const; //重载下标操作符，可以类似于数组形式引用各元素
-//     Vector<T> & operator= ( Vector<T> const& ); //重载赋值操作符，以便直接克隆向量
-//     T remove ( int r ); //初除下标为r癿元素
-//     int remove ( int lo, int hi ); //删除区间[lo, hi)内的元素
-//     int insert ( int r, T const& e ); //插入元素
-//     int insert ( T const& e ) { return insert ( _size, e ); } //默认在数组末尾插入
-//     void sort ( int lo, int hi ); //对[lo, hi)排序
-//     void sort() { sort ( 0, _size ); } //整体排序
-//     void unsort ( int lo, int hi ); //对[lo, hi)置乱
-//     void unsort() { unsort ( 0, _size ); } //整体置乱
-//     int deduplicate(); //无序去重
-//     int uniquify(); //有序去重
-
-// //遍历
-//     void traverse ( void (* ) ( T& ) ); //遍历（使用函数指针，只读或局部性修改）
-//     template <typename VST> void traverse ( VST& ); //遍历（使用函数对象，可全局性修改）
-
-
-// }; //vector
-
-template<typename T> class vector
+#define DEFAULT_CAPACITY 3 
+template <typename T> class vector
 {
-private:
-    int _size; //数组大小
-    int _capacity; //数组允许存储的最大长度
-    T* _data; //数组头指针
 public:
-    vector(); //默认构造函数
+    vector();
+    ~vector();
     vector(const vector<T>& other); //用另外一个vector来构造
     vector(std::initializer_list<T> init); //列表初始化
     vector(const vector<T>& other,int left,int right); //用另外一个vector区间构造
-    vector(int count, T& value); //初始化为count个 value
-public:
-    ~vector();
+    vector(size_t count, T& value); //初始化为count个 value
+public: //成员函数
+    vector& operator=(const vector& other);
+    vector& operator=( std::initializer_list<T> ilist );
 
+    void assign(size_t count,const T& value);
+    void assign(std::initializer_list<T> ilist );
+public: //元素访问
+    T& at(size_t index);
+    T& operator[](size_t index);
+    T& front();
+    T& back();
+    T* data();
+public: //容量
+    bool empty() const;
+    size_t size() const;
+    size_t max_size() const;
+    void reserve(size_t new_cap);
+    size_t capacity() const;
+    void shrink_to_fit();
+
+public: //迭代器
+    class Iterator
+    {
+        private:
+            T * m_pointer;
+        public:
+            Iterator():m_pointer(nullptr) {}
+            Iterator(T * pointer) : m_pointer(pointer) {}
+            ~Iterator() {}
+        /* 判断两个迭代器是否相等 */
+        bool operator == (const Iterator & other)
+        {
+            return m_pointer == other.m_pointer;   
+        } 
+        /* 迭代器赋值 */
+        Iterator operator = (const Iterator& other)
+        {
+            m_pointer = other.m_pointer;
+        }
+
+        /* 前缀递增*/
+        Iterator & operator ++ ()
+        {
+            m_pointer +=1;
+            return *this;
+        }
+
+        /* 后缀递增 */
+        Iterator operator ++ (int)
+        {
+            Iterator it = *this;
+            ++(*this);
+            return it;
+        }
+
+        Iterator operator + (int i)
+        {
+            Iterator it = *this;
+            it.m_pointer += i;
+            return it;
+        }
+        Iterator operator += (int i)
+        {
+            m_pointer += i;
+            return *this;
+        }
+
+        Iterator operator -= (int i)
+        {
+            m_pointer -= i;
+            return *this;
+        }
+
+        Iterator operator - (int i)
+        {
+            Iterator it = *this;
+            it.m_pointer -= i;
+            return it;
+        }
+
+        int operator - (const Iterator& other) const
+        {
+            return m_pointer - other.m_pointer;
+        }
+
+        T & operator * ()
+        {
+            return *m_pointer;
+        }
+
+        T * operator -> ()
+        {
+            return m_pointer;
+        }
+    };
+public: //迭代器操作函数
+    Iterator begin();
+    Iterator end();
+public: //修改器
+    void clear();
+    void insert(size_t index, T& value);  
+private:
+    size_t _size; //数组大小
+    size_t _capacity; //数组允许存储的最大长度
+    T* _data; //数组头指针
+    void expand(); //内存不足时扩容
+    void shrink(); //装填因子过小时压缩
+    void copyFrom ( T const* A, int lo, int hi );
 };
 
+/*构造函数*/
 template<typename T>
-vector<T>::vector():_data(nullptr),_size(0),_capacity(0)
+vector<T>::vector():_data(nullptr),_capacity(0),_size(0)
 {
 
 }
 
-
+/* 析构函数 */
 template<typename T>
 vector<T>::~vector()
 {
@@ -111,4 +150,174 @@ vector<T>::~vector()
     }
     _size = 0;
     _capacity = 0;
+}
+
+
+template <typename T> 
+void vector<T>::expand()
+{
+    if(_size < _capacity) return;  //当size 小于 capacity 时 不需要扩容
+    if(_capacity < DEFAULT_CAPACITY) _capacity = DEFAULT_CAPACITY; //当capacity小于最小大小，更改capacity为最小大小
+    
+    T* old_data = _data;
+    _data = new T[_capacity << 1];  //capacity 增大一倍，重新 new 内存
+    for(int i=0;i<_size; i++)       //赋值
+    {
+        _data[i] = old_data[i];
+    }
+
+    delete[] old_data;
+}
+
+
+template <typename T> 
+void vector<T>::shrink()
+{
+    if(_capacity < DEFAULT_CAPACITY << 1) return; //不致收缩倒DEFAULT_CAPACITY以下
+    if(_size << 2 > _capacity) return;  //以 25% 为边界
+
+    T* old_data = _data;
+    _data = new T[_capacity >> 1];
+    for(size_t i = 0; i < _size; i++)
+    {
+        _data[i] = old_data[i];
+    }
+    delete[] old_data;
+}
+
+
+template <typename T> 
+void vector<T>::copyFrom ( T const* A, int left, int right )
+{
+    if(_data != nullptr)
+    {
+        delete [] _data;
+        _data = nullptr;
+    }
+    _capacity = (right - left) * 2;
+    _size = 0;
+    _data = new T[_capacity];
+
+    while (left < right)
+    {
+        _data[_size] = A[left];
+        _size++;
+        left++;
+    }
+}
+template <typename T>
+vector<T>::vector(const vector<T>& other)
+{
+    copyFrom(other._data,0,other._size);
+}
+
+template <typename T>
+vector<T>::vector(const vector<T>& other,int left,int right)
+{
+    copyFrom(other._data,other.left,other.right);
+}
+
+/* c++11 列表初始化 */
+template <typename T>
+vector<T>::vector(std::initializer_list<T> init)
+{
+    _size = init.size();
+    _capacity = _size * 2;
+    int i = 0;
+    _data = new T[_capacity];
+    for(const auto & elem : init)
+    {
+        _data[i++] = elem;
+    }
+}
+
+template <typename T>
+vector<T>::vector(size_t count, T& value)
+{
+    _size = count;
+    _capacity = 2 * _size;
+    _data = new T[_capacity];
+    for(size_t i =0; i<count;i++)
+    {
+        _data[i] = value;
+    }
+}
+
+template <typename T>
+vector<T>& vector<T>::operator=(const vector& other)
+{
+    copyFrom(other._data,0,other._size);
+    return *this;
+}
+
+template <typename T>
+vector<T>& vector<T>::operator=( std::initializer_list<T> ilist )
+{
+    if(_data != nullptr)
+    {
+        delete [] _data;
+        _data = nullptr;
+    }
+    _size = ilist.size();
+    _capacity = _size * 2;
+    int i = 0;
+    _data = new T[_capacity];
+    for(const auto & elem : ilist)
+    {
+        _data[i++] = elem;
+    }
+    return *this;
+}
+
+template <typename T>
+T& vector<T>::at(size_t index)
+{
+    if(index <0 || index >= _size)
+    {
+        throw std::logic_error("out of range");
+    }
+    return _data[index];
+}
+
+template <typename T>
+T& vector<T>::operator[](size_t index)
+{
+    return this->at(index);
+}
+
+template <typename T>
+T& vector<T>::front()
+{
+    return _data[0];
+}
+
+
+template <typename T>
+T& vector<T>::back()
+{
+    if (_size <= 0)
+    {
+        throw std::logic_error("vector is empty");
+    }
+    return _data[_size-1];
+}
+
+template <typename T>
+T* vector<T>::data()
+{
+    return _data;
+}
+
+template <typename T>
+typename vector<T>::Iterator vector<T>::begin()
+{
+    vector<T>::Iterator it(_data);
+    return it;
+}
+
+template <typename T>
+typename vector<T>::Iterator vector<T>::end()
+{
+    vector<T>::Iterator it(_data + _size);
+    return it;
 }
