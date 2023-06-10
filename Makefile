@@ -3,5 +3,6 @@ main.out:*.cpp
 	g++ $^ -o $@
 
 .PHONY: clean
-clear:
+clean:
 	rm -rf *.out
+	rm -rf .vscode

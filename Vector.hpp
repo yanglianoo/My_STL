@@ -1,6 +1,6 @@
 /**
  * @File Name: Vector.hpp
- * @brief  Vector 模板类头文件
+ * @brief  Vector 模板类
  * @Author : Timer email:330070781@qq.com
  * @Version : 1.0
  * @Creat Date : 2023-05-10
@@ -11,6 +11,8 @@
 #include <initializer_list>
 #include <iostream>
 #include <stdexcept>
+namespace my_stl
+{
 
 #define DEFAULT_CAPACITY 3 
 template <typename T> class vector
@@ -41,7 +43,6 @@ public: //容量
     void reserve(size_t new_cap);
     size_t capacity() const;
     void shrink_to_fit();
-
 public: //迭代器
     class Iterator
     {
@@ -122,7 +123,15 @@ public: //迭代器操作函数
     Iterator end();
 public: //修改器
     void clear();
-    void insert(size_t index, T& value);  
+    Iterator insert(const Iterator it ,const T & value);  
+    Iterator insert(const Iterator it ,int n,const T & value);
+    Iterator erase(const Iterator it);
+    Iterator erase(const Iterator first,const Iterator last);
+    void push_back(const T & value);
+    void pop_back();
+    void resize(size_t size);
+    void swap(vector & other);
+
 private:
     size_t _size; //数组大小
     size_t _capacity; //数组允许存储的最大长度
@@ -156,9 +165,14 @@ vector<T>::~vector()
 template <typename T> 
 void vector<T>::expand()
 {
-    if(_size < _capacity) return;  //当size 小于 capacity 时 不需要扩容
+
+    if(_size <= _capacity) return;  //当size 小于等于 capacity 时 不需要扩容
     if(_capacity < DEFAULT_CAPACITY) _capacity = DEFAULT_CAPACITY; //当capacity小于最小大小，更改capacity为最小大小
-    
+    /* 反复翻倍，直到 _capacity > _size*/
+    while (_capacity < _size)
+    {
+        _capacity *=2;
+    }
     T* old_data = _data;
     _data = new T[_capacity << 1];  //capacity 增大一倍，重新 new 内存
     for(int i=0;i<_size; i++)       //赋值
@@ -167,6 +181,7 @@ void vector<T>::expand()
     }
 
     delete[] old_data;
+
 }
 
 
@@ -320,4 +335,204 @@ typename vector<T>::Iterator vector<T>::end()
 {
     vector<T>::Iterator it(_data + _size);
     return it;
+}
+
+template <typename T>
+bool vector<T>::empty() const
+{
+    return _size==0;
+}
+
+template <typename T>
+size_t vector<T>::size() const
+{
+    return _size;
+}
+
+template <typename T>
+size_t vector<T>::max_size() const
+{
+    return _capacity;
+}
+
+
+template <typename T>
+size_t vector<T>::capacity() const
+{
+    return _capacity;
+}
+
+/* 重置容器大小 */
+template <typename T>
+void vector<T>::reserve(size_t new_cap)
+{
+    if(_capacity >= new_cap)
+    {
+        return;
+    }
+    else
+    {
+        _size += new_cap;
+        expand();
+    }
+}
+
+/* 如果 _capacity 过大则缩减*/
+template <typename T>
+void vector<T>::shrink_to_fit()
+{
+    shrink();
+}
+
+/* clear操作，直接将 _size 清零*/
+template <typename T>
+void vector<T>::clear()
+{
+    if (_size <= 0)
+    {
+        throw std::logic_error("vector is empty");
+    }
+    _size = 0;
+}
+
+/* 在 it 位置插入 1 个元素 value*/
+template <typename T>
+typename vector<T>::Iterator vector<T>::insert(const Iterator it ,const T & value)
+{
+    _size+=1;
+    expand();
+    insert(it,1,value);
+}
+
+/* 在 it 的位置插入 n 个 T 元素*/
+template <typename T>
+typename vector<T>::Iterator vector<T>::insert(const Iterator it ,int n,const T & value)
+{
+    int count = it - begin();
+    _size += n;
+    //如果有需要，则扩容
+    expand();
+    for(size_t i=_size; i>count;i--)
+    {
+        _data[i+n-1] = _data[i-1];
+    }
+    for(size_t i=0; i<n;i++)
+    {
+        _data[count+i] = value;
+    }
+    return vector<T>::Iterator(_data + size);
+}
+
+/* 删除 it 位置的元素 */
+template <typename T>
+typename vector<T>::Iterator vector<T>::erase(const Iterator it)
+{
+    if(end() - it == 1)
+    {
+        _size -= 1;
+        return end();
+    }
+    int count = it - begin();
+    for(size_t i = count; i < _size -1 ; i++)
+    {
+        _data[i] = _data[i+1];
+    }
+    _size -= 1;
+
+    shrink(); //若有必要则缩容
+    return it;
+}
+
+/* 区间删除 */
+template <typename T>
+typename vector<T>::Iterator vector<T>::erase(const Iterator first,const Iterator last)
+{
+    if( first == last)
+    {
+        return first;  
+    }
+    else
+    {
+        int f = first - begin();
+        int l = last - begin();
+        while ( l < _size) // [last,_szie) 顺次前移 l - f 个单元
+        {
+            _data[f++] = _data[l++];
+        }
+        _size = f;  //更新规模
+        shrink(); //若有必要则缩容
+        return first;
+    }
+}
+
+/* 在尾部插入一个元素value */
+template <typename T>
+void vector<T>::push_back(const T& value)
+{
+    if(_size < _capacity)
+    {
+        _data[_size] = value; 
+        _size++;
+        return;
+    }
+    else
+    {
+        _size++;
+        expand();
+        int index = _size - 1;
+        _data[index] = value; 
+    }
+}
+
+/* 弹出最后一个元素 */
+template <typename T>
+void vector<T>::pop_back()
+{
+    if(_size != 0)
+    {
+        _size--;
+    }
+}
+
+
+template <typename T>
+void vector<T>::resize(size_t size)
+{
+    if(_size > size)
+    {
+        _size = size;
+        return;
+    }
+
+    if(size <= _capacity)
+    {
+        for(size_t i= _size; i < size; i++)
+        {
+            _data[i] = T();
+        }
+        _size = size;
+        return;
+    }
+
+    _size = size;
+    expand();
+}
+
+/* 两个 vector 交换*/
+template <typename T>
+void vector<T>::swap(vector & other)
+{
+    T * data = other._data;
+    int size = other._size;
+    int capacity = other._capacity;
+
+    other._data = _data;
+    other._size = _size;
+    other._capacity = _capacity;
+
+    _data = data;
+    _size = size;
+    _capacity = capacity;
+}
+
 }
