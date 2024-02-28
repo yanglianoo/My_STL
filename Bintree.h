@@ -1,77 +1,10 @@
 #pragma once
 
+#include <stack>
+#include <queue>
 #include "release.h"
-#define stature(p) ((p) ? (p)->height : -1) //节点高度
-//节点颜色
-enum RBClor
-{
-    RB_RED, 
-    RB_BLACK
-};
+#include "Binnode.h"
 
-#define IsRoot(x) ( !((x).parent) ) //判断是否为根节点
-#define IsLChild(x) ( ! IsRoot(x) && ( & (x) == (x).parent->lc))  //判断x是否为左孩子节点
-#define IsRChild(x) ( ! IsRoot(x) && ( & (x) == (x).parent->rc))  //判断x是否为右孩子节点
-#define HasParent(x) ( ! IsRoot(x) )
-#define HasRChild(x) ( (x).rc )
-#define HasLChild(x) ( (x).lc )
-#define HasChild(x) ( HasLChild(x) || HasRChild(x) ) //至少拥有一个孩子
-#define HasBothChild(x) ( HasLChild(x) && HasRChild(x) ) //同时拥有两个孩子
-
-#define IsLeaf(x) ( ! HasChild(x) )  //判断x节点是否是叶子节点
-
-#define sibling(p)   \
-            ( IsLChild(* (p)) ? (p)->parent->rc : (p)->parent->lc )   // 拿到兄弟节点
-
-#define uncle(x)   \
-            (  IsLChild( *( (x)->parent )) ? (x)->parent->parent->rc : (x)->parent->parent->lc)  //拿到叔叔节点
-
-#define FromParentTo(x)  \ 
-            ( IsRoot(x) ? root_ : (IsLChild(x) ? (x).parent->lc : (x).parent->rc))
-
-
-template <typename T>
-struct Binnode
-{
-    
-public:
-    int size(); //统计当前节点后代总数，亦即以其为根的子树的规模
-    Binnode<T>* insertAsLC(T const & ); //作为当前节点的左孩子插入
-    Binnode<T>* insertAsRC(T const & ); //作为当前节点的右孩子插入
-    Binnode<T>* succ();  //取当前节点的直接后续
-    template <typename VST> void travLevel( VST& ); //子树层次遍历
-    template <typename VST> void travPre( VST& ); //子树先序遍历
-    template <typename VST> void travIn( VST& ); //子树中序遍历
-    template <typename VST> void travPost( VST& ); //子树后序遍历
-
-public:
-    bool operator< (Binnode const& bn) {return data < bn.data; }
-    bool operator== (Binnode const& bn) {return data== bn.data;}
-
-public:
-    Binnode() : 
-        parent(nullptr), lc(nullptr) , rc(nullptr) , height(0) , color(RB_RED) {}
-    Binnode(T e, Binnode<T>* p = nullptr, Binnode<T>* lc=nullptr, Binnode<T>* rc=nullptr, int h=0, RBClor c = RB_RED)
-              : data(e) , parent(p) , lc(lc) , rc(rc) , height(h), color(c) {}
-public:
-    T data;
-    int height; // 高度
-    RBClor color; // 颜色（红黑树）
-
-    Binnode<T>* parent; //父节点
-    Binnode<T>* lc;    //左孩子节点
-    Binnode<T>* rc;   //右孩子节点
-};
-
-template <typename T>
-Binnode<T>* Binnode<T>::insertAsLC(T const &e ){
-    return lc = new Binnode(e ,this);
-}
-
-template <typename T>
-Binnode<T>* Binnode<T>::insertAsRC(T const &e ){
-    return rc = new Binnode(e ,this);
-}
 
 template <typename T> 
 class Bintree
@@ -210,6 +143,143 @@ Bintree<T>* Bintree<T>::secede(Binnode<T>*  x){
     size_ -= S->size_;
     return S;
 }
+
+//二叉树先序遍历算法（递归版）
+template <typename T, typename VST>
+void travPre_R(Binnode<T>* x, VST& vlist){
+    if( !x ) return;
+    vlist(x->data);
+    travPre_R( x->lc, vlist);
+    travPre_R( x->rc, vlist);
+}
+
+//二叉树后序遍历 (递归版)
+template <typename T, typename VST>
+void travPost_R(Binnode<T>* x, VST& vlist){
+    if( !x ) return;
+    travPost_R(x->lc, vlist);
+    travPost_R(x->rc, vlist);
+    vlist(x->data);
+}
+
+//二叉树中序遍历 (递归版)
+template <typename T, typename VST>
+void travIn_R(Binnode<T>* x, VST& vlist){
+    if( !x ) return;
+    travIn_R( x->lc , vlist);
+    vlist(x->data);
+    travIn_R(x->rc);
+}
+
+template <typename T, typename VST>
+static void visitAlongLeftBranch(Binnode<T>* x, VST& vlist, std::stack<Binnode<T>*>& S){
+    while (x)
+    {
+        vlist(x->data); //访问当前节点
+        S.push(x->rc); //右孩子入栈暂存
+        x = x->lc; //沿左分支深入一层
+    }
+}
+
+//先序遍历，迭代版
+template <typename T, typename VST>
+void travPre_I2(Binnode<T>* x, VST& vlist){
+    std::stack<Binnode<T>*> S; //辅助栈
+    while ( true )
+    {
+        visitAlongLeftBranch(x ,vlist ,S);
+        if( S.empty() ) break; //直到栈空
+        x = S.pop(); //弹出下一批的起点
+    }
+    
+}
+
+//从当前节点出发，沿着左分支不断深入，直至没有左分支的节点
+template <typename T>
+static void goAlongLeftBranch(Binnode<T>* x, std::stack<Binnode<T>*> & S){
+    while (x)
+    {
+        S.push(x);
+        x = x->lc;
+    } 
+}
+
+//中序遍历，迭代版本
+template <typename T, typename VST>
+void travIn_I1(Binnode<T>* x, VST& vlist){
+    std::stack<Binnode<T>*> S; //辅助栈
+    while (true)
+    {
+        goAlongLeftBranch(x ,S);
+        if(S.empty()) break;
+        x = S.pop(); 
+        vlist(x->data);
+        x = x->rc;
+    }
+}
+
+//二叉树中序遍历算法（迭代版#2）
+template <typename T, typename VST>
+void travIn_I2(Binnode<T>* x, VST& vlist){
+    std::stack<Binnode<T>*> S; //辅助栈
+    while (true)
+    {
+        if(x){
+            S.push(x); //根节点进栈
+            x = x->lc; //深入遍历左子树
+        } else if (!S.empty()){
+            x = S.pop(); //
+            vlist(x->data);
+            x = x->rc;
+        } else {
+            break;
+        }
+    } 
+}
+
+//二叉树中序遍历算法（迭代版#3）
+template <typename T, typename VST>
+void travIn_I3(Binnode<T>* x, VST& vlist){
+    bool backtrack = false; // //前一步是否刚从右子树回溯——省去栈，仅O(1)辅助空间
+    while (true)
+    {
+        if( !backtrack && HasLChild(*x)){//若有左子树且不是刚刚回溯，则
+            x = x->lc;  //深入遍历左子树
+        }else{//否则——无左子树或者刚刚回溯（相当于无左子树）
+            vlist(x->data); //访问该节点
+            if(HasRChild(*x)){ //若其右子树非空，则
+                x = x->rc;     //深入右子树继续遍历
+                backtrack = false;
+            }else{ //若右子树为空
+                if( !( x = x->succ())) break; //回溯，找到x的直接后置节点
+                backtrack = true; //设置回溯标志
+            }
+        }
+    }
+}
+
+//队列先进先出，层次遍历，广度优先遍历
+template <typename T>  template < typename VST >
+void Binnode<T>::travLevel(VST& vlist){
+    std::queue<Binnode<T>*> Q;
+    Q.push(this);
+    while ( !Q.empty())
+    {
+        Binnode<T>* x = Q.pop(); 
+        vlist(x->data);
+        if(HasLChild(*x)) Q.push( x->lc); //
+        if(HasRChild(*x)) Q.push( x->rc);
+    }
+}
+
+
+
+
+
+
+
+
+
 
 
 
